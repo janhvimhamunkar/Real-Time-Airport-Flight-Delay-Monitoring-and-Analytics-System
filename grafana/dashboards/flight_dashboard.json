@@ -1,0 +1,58 @@
+{
+  "title": "Real-Time Flight Delay Monitoring",
+  "uid": "flight-delay-monitoring",
+  "refresh": "5s",
+  "schemaVersion": 39,
+  "timezone": "browser",
+  "time": { "from": "now-6h", "to": "now" },
+  "panels": [
+    { "type": "stat", "title": "Total Flights", "gridPos": {"h":4,"w":4,"x":0,"y":0},
+      "datasource": {"type":"postgres","uid":"postgresql-flights"},
+      "targets": [{"rawSql":"SELECT COUNT(*) FROM flights;","format":"table","refId":"A"}] },
+
+    { "type": "stat", "title": "Delayed Flights", "gridPos": {"h":4,"w":4,"x":4,"y":0},
+      "datasource": {"type":"postgres","uid":"postgresql-flights"},
+      "targets": [{"rawSql":"SELECT COUNT(*) FROM flights WHERE delay_category IN ('MINOR_DELAY','MODERATE_DELAY','MAJOR_DELAY');","format":"table","refId":"A"}] },
+
+    { "type": "stat", "title": "Cancelled Flights", "gridPos": {"h":4,"w":4,"x":8,"y":0},
+      "datasource": {"type":"postgres","uid":"postgresql-flights"},
+      "targets": [{"rawSql":"SELECT COUNT(*) FROM flights WHERE status = 'CANCELLED';","format":"table","refId":"A"}] },
+
+    { "type": "stat", "title": "On-Time Flights", "gridPos": {"h":4,"w":4,"x":12,"y":0},
+      "datasource": {"type":"postgres","uid":"postgresql-flights"},
+      "targets": [{"rawSql":"SELECT COUNT(*) FROM flights WHERE delay_category = 'ON_TIME';","format":"table","refId":"A"}] },
+
+    { "type": "gauge", "title": "On-Time Percentage", "gridPos": {"h":4,"w":4,"x":16,"y":0},
+      "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100}},
+      "datasource": {"type":"postgres","uid":"postgresql-flights"},
+      "targets": [{"rawSql":"SELECT ROUND(100.0 * COUNT(*) FILTER (WHERE delay_category = 'ON_TIME') / NULLIF(COUNT(*),0), 1) FROM flights;","format":"table","refId":"A"}] },
+
+    { "type": "stat", "title": "Average Delay (min)", "gridPos": {"h":4,"w":4,"x":20,"y":0},
+      "datasource": {"type":"postgres","uid":"postgresql-flights"},
+      "targets": [{"rawSql":"SELECT ROUND(AVG(delay_minutes),1) FROM flights WHERE status != 'CANCELLED';","format":"table","refId":"A"}] },
+
+    { "type": "barchart", "title": "Average Delay by Airline", "gridPos": {"h":8,"w":8,"x":0,"y":4},
+      "datasource": {"type":"postgres","uid":"postgresql-flights"},
+      "targets": [{"rawSql":"SELECT airline, ROUND(AVG(delay_minutes),1) AS avg_delay FROM flights WHERE status != 'CANCELLED' GROUP BY airline ORDER BY avg_delay DESC;","format":"table","refId":"A"}] },
+
+    { "type": "barchart", "title": "Average Delay by Airport", "gridPos": {"h":8,"w":8,"x":8,"y":4},
+      "datasource": {"type":"postgres","uid":"postgresql-flights"},
+      "targets": [{"rawSql":"SELECT airport, ROUND(AVG(delay_minutes),1) AS avg_delay FROM flights WHERE status != 'CANCELLED' GROUP BY airport ORDER BY avg_delay DESC;","format":"table","refId":"A"}] },
+
+    { "type": "piechart", "title": "Flight Status Distribution", "gridPos": {"h":8,"w":8,"x":16,"y":4},
+      "datasource": {"type":"postgres","uid":"postgresql-flights"},
+      "targets": [{"rawSql":"SELECT delay_category, COUNT(*) AS flights FROM flights GROUP BY delay_category;","format":"table","refId":"A"}] },
+
+    { "type": "timeseries", "title": "Delay Trend Over Time", "gridPos": {"h":8,"w":12,"x":0,"y":12},
+      "datasource": {"type":"postgres","uid":"postgresql-flights"},
+      "targets": [{"rawSql":"SELECT $__timeGroupAlias(event_timestamp,'1m'), AVG(delay_minutes) AS avg_delay FROM flights WHERE $__timeFilter(event_timestamp) AND status != 'CANCELLED' GROUP BY 1 ORDER BY 1;","format":"time_series","refId":"A"}] },
+
+    { "type": "table", "title": "Recent Flight Events", "gridPos": {"h":8,"w":12,"x":12,"y":12},
+      "datasource": {"type":"postgres","uid":"postgresql-flights"},
+      "targets": [{"rawSql":"SELECT flight_number, airline, origin, destination, status, delay_minutes, delay_category, event_timestamp FROM flights ORDER BY event_timestamp DESC LIMIT 15;","format":"table","refId":"A"}] },
+
+    { "type": "table", "title": "Top Delayed Airports", "gridPos": {"h":8,"w":12,"x":0,"y":20},
+      "datasource": {"type":"postgres","uid":"postgresql-flights"},
+      "targets": [{"rawSql":"SELECT airport, ROUND(AVG(delay_minutes),1) AS avg_delay, COUNT(*) AS flights FROM flights WHERE status != 'CANCELLED' GROUP BY airport ORDER BY avg_delay DESC LIMIT 10;","format":"table","refId":"A"}] }
+  ]
+}

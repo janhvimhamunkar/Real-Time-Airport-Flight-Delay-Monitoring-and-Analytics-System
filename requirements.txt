@@ -1,0 +1,9 @@
+# Single requirements file for the producer, the Spark job, and the test suite.
+# Tested on macOS Apple Silicon with Python 3.11 (PySpark 3.5.x does not yet
+# officially support 3.13; 3.11 is the safest choice on Apple Silicon).
+
+python-dotenv>=1.0.1
+confluent-kafka>=2.6.0
+pyspark==3.5.3
+psycopg2-binary>=2.9.10
+pytest==8.3.3
